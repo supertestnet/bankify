@@ -766,13 +766,9 @@
                         if ( "type" in command.params && command.params[ "type" ] === "outgoing" ) include_incoming = false;
                         txids.forEach( item => {
                             var tx = nostr_state.nwc_info[ app_pubkey ].tx_history[ item ];
-                            console.log( tx );
                             if ( !include_unpaid && !tx[ "paid" ] ) return;
-                            console.log( 0 );
                             if ( !include_incoming && tx[ "type" ] === "incoming" ) return;
-                            console.log( 1 );
                             if ( !include_outgoing && tx[ "type" ] === "outgoing" ) return;
-                            console.log( 2 );
                             txs.push( tx );
                         });
                         txs = JSON.parse( JSON.stringify( txs ) );
