@@ -616,6 +616,10 @@
                 filter[ "#p" ] = [ Object.keys( nostr_state.nwc_info )[ 0 ] ];
                 var subscription = [ "REQ", subId, filter ];
                 socket.send( JSON.stringify( subscription ) );
+                var state = nostr_state.nwc_info[ Object.keys( nostr_state.nwc_info )[ 0 ] ];
+                var msg = `pay_invoice get_balance make_invoice lookup_invoice list_transactions get_info`;
+                var event = await super_nostr.prepEvent( state[ "app_privkey" ], msg, 13194 );
+                return super_nostr.sendEvent( event, socket );
             }
             var handleEvent = async message => {
                 var [ type, subId, event ] = JSON.parse( message.data );
