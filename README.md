@@ -2,7 +2,7 @@
 Turn any cashu mint into a lightning wallet with NWC support
 
 # What is bankify?
-Bankify is a response to a frustration I've had: not enough custodial bitcoin wallets support Nostr Wallet Connect aka NWC. The only ones I'm aware of (til I released this app) are getalby.com, cashu.me, and mutiny wallet if you configure it to use a federation first. But mutiny wallet is [shutting down](https://blog.mutinywallet.com/mutiny-wallet-is-shutting-down/) and alby wallet [stopped opening new accounts](https://stacker.news/items/640256) for their custodial service, so only cashu.me will work in the near future. Bankify to the rescue!
+Bankify is a response to a frustration I've had: not enough custodial bitcoin wallets support Nostr Wallet Connect aka NWC. The only ones I'm aware of (til I released this app) are getalby.com, cashu.me, and mutiny wallet if you configure it to use a federation first. But mutiny wallet is [shutting down](https://blog.mutinywallet.com/mutiny-wallet-is-shutting-down/) and alby wallet [stopped opening new accounts](https://stacker.news/items/640256) for their custodial service, so only cashu.me will work in the near future -- and cashu.me is "send only," unfortunately, so it doesn't even support all of the features NWC offers. Bankify to the rescue!
 
 # How can I try it?
 Just click here: https://supertestnet.github.io/bankify/
