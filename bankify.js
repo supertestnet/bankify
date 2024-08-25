@@ -739,4 +739,34 @@ var bankify = {
         var reply = await bankify.send( mymint, invoice, amnt_for_amountless_invoice, app_pubkey );
         alert( reply );
     },
+    receiveLN: async () => {
+        if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
+        var mymint = bankify.state.mymint;
+        var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
+        var amount = prompt( `enter how much you want in satoshis` );
+        if ( !amount || isNaN( amount ) ) return;
+        amount = Number( amount );
+        var invoice_data = await bankify.getLNInvoice( mymint, amount );
+        var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
+        state.tx_history[ bankify.getInvoicePmthash( invoice_data[ "request" ] ) ] = {
+            invoice_data,
+            pmthash: bankify.getInvoicePmthash( invoice_data[ "request" ] ),
+            amount: amount * 1000,
+            invoice: invoice_data[ "request" ],
+            bolt11: invoice_data[ "request" ],
+            quote: invoice_data[ "quote" ],
+            type: "incoming",
+            description: "NWC invoice",
+            description_hash: "",
+            preimage: "",
+            payment_hash: bankify.getInvoicePmthash( invoice_data[ "request" ] ),
+            fees_paid: 0,
+            created_at: bolt11.decode( invoice_data.request ).timestamp,
+            expires_at: bolt11.decode( invoice_data.request ).timeExpireDate,
+            settled_at: null,
+            paid: false,
+        }
+        bankify.checkInvoiceTilPaidOrError( mymint, invoice_data, app_pubkey );
+        return invoice_data[ "request" ];
+    }
 }
