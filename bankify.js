@@ -712,4 +712,31 @@ var bankify = {
         await waitForConnection();
         console.log( `connected!` );
     },
+    sendLN: async () => {
+        if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
+        var mymint = bankify.state.mymint;
+        var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
+        var invoice = prompt( `enter a lightning invoice` );
+        var invoice_amt = bolt11.decode( invoice ).satoshis;
+        if ( !invoice_amt ) return alert( `amountless invoices are not yet supported by this wallet` );
+        var amnt_for_amountless_invoice = null;
+        var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
+        state.tx_history[ bankify.getInvoicePmthash( invoice ) ] = {
+            type: "outgoing",
+            invoice: invoice,
+            bolt11: invoice,
+            description: bankify.getInvoiceDescription( invoice ),
+            description_hash: bankify.getInvoiceDeschash( invoice ),
+            preimage: "",
+            payment_hash: bankify.getInvoicePmthash( invoice ),
+            amount: Number( bolt11.decode( invoice ).millisatoshis ),
+            fees_paid: 0,
+            created_at: bolt11.decode( invoice ).timestamp,
+            expires_at: bolt11.decode( invoice ).timeExpireDate,
+            settled_at: null,
+            paid: false,
+        }
+        var reply = await bankify.send( mymint, invoice, amnt_for_amountless_invoice, app_pubkey );
+        alert( reply );
+    },
 }
