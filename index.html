@@ -72,8 +72,6 @@
     <script>
         var $ = document.querySelector.bind( document );
         var $$ = document.querySelectorAll.bind( document );
-    </script>
-    <script>
         $( '.create_nwc_connection' ).onclick = () => {
             var mint = prompt( `Pick a cashu mint from bitcoinmints.com (pick one that supports NUTS not MODULES) and enter its url here` );
             if ( mint.includes( "..." ) ) return alert( `your mint url is invalid, be sure you clicked the clipboard icon on bitcoinmints.com -- if you just highlight + copy it won't work` );
@@ -106,62 +104,15 @@
             await waitForConnection();
             $( '.nwc_string_div' ).innerHTML = `<p>Here is your NWC string:</p><p style="border: 1px solid black; background-color: #aaaaaa; color: black; font-family: monospace; padding: 0.5rem; max-width: 15rem; word-wrap: break-word;">${nwc_string}</p><p><button onclick="destroyConnection( '${connection_id}' )">Destroy this connection</button></p>`;
             $( '.send_and_receive_btns' ).classList.remove( "hidden" );
-            $( '.send' ).onclick = async () => {
-                var mymint = bankify.state.mymint;
-                var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
-                var invoice = prompt( `enter a lightning invoice` );
-                var invoice_amt = bolt11.decode( invoice ).satoshis;
-                if ( !invoice_amt ) return alert( `amountless invoices are not yet supported by this wallet` );
-                var amnt_for_amountless_invoice = null;
-                var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
-                state.tx_history[ bankify.getInvoicePmthash( invoice ) ] = {
-                    type: "outgoing",
-                    invoice: invoice,
-                    bolt11: invoice,
-                    description: bankify.getInvoiceDescription( invoice ),
-                    description_hash: bankify.getInvoiceDeschash( invoice ),
-                    preimage: "",
-                    payment_hash: bankify.getInvoicePmthash( invoice ),
-                    amount: Number( bolt11.decode( invoice ).millisatoshis ),
-                    fees_paid: 0,
-                    created_at: bolt11.decode( invoice ).timestamp,
-                    expires_at: bolt11.decode( invoice ).timeExpireDate,
-                    settled_at: null,
-                    paid: false,
-                }
-                var reply = await bankify.send( mymint, invoice, amnt_for_amountless_invoice, app_pubkey );
-                alert( reply );
-            }
+            var sendLN = async () => bankify.sendLN;
+            $( '.send' ).onclick = sendLN;
             $( '.receive' ).onclick = async () => {
-                var mymint = bankify.state.mymint;
-                var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
-                var amount = prompt( `enter how much you want in satoshis` );
-                if ( !amount || isNaN( amount ) ) return;
+                var $ = document.querySelector.bind( document );
+                var $$ = document.querySelectorAll.bind( document );
                 $( '.invoice_box' ).innerText = `loading...`;
                 $( '.invoice_box' ).classList.remove( "hidden" );
-                amount = Number( amount );
-                var invoice_data = await bankify.getLNInvoice( mymint, amount );
-                var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
-                state.tx_history[ bankify.getInvoicePmthash( invoice_data[ "request" ] ) ] = {
-                    invoice_data,
-                    pmthash: bankify.getInvoicePmthash( invoice_data[ "request" ] ),
-                    amount: amount * 1000,
-                    invoice: invoice_data[ "request" ],
-                    bolt11: invoice_data[ "request" ],
-                    quote: invoice_data[ "quote" ],
-                    type: "incoming",
-                    description: "NWC invoice",
-                    description_hash: "",
-                    preimage: "",
-                    payment_hash: bankify.getInvoicePmthash( invoice_data[ "request" ] ),
-                    fees_paid: 0,
-                    created_at: bolt11.decode( invoice_data.request ).timestamp,
-                    expires_at: bolt11.decode( invoice_data.request ).timeExpireDate,
-                    settled_at: null,
-                    paid: false,
-                }
-                bankify.checkInvoiceTilPaidOrError( mymint, invoice_data, app_pubkey );
-                $( '.invoice_box' ).innerText = invoice_data[ "request" ];
+                var invoice = await bankify.receiveLN();
+                $( '.invoice_box' ).innerText = invoice;
             }
             if ( bankify.state.utxos.length && !Number( $( '.balance' ).innerText ) ) $( '.balance' ).innerText = bankify.getBalance();
         }
