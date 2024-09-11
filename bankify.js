@@ -303,10 +303,10 @@ var bankify = {
                     bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "settled_at" ] = Math.floor( Date.now() / 1000 );
                     bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "paid" ] = true;
                     var balance_now = bankify.getBalance();
-                    var fees_paid = balance_before_paying - pre_amount - balance_now;
+                    var fees_paid = ( balance_before_paying - pre_amount - balance_now ) * 1000;
                     bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ].fees_paid = fees_paid;
                     var state_balance = bankify.state.nostr_state.nwc_info[ app_pubkey ].balance;
-                    bankify.state.nostr_state.nwc_info[ app_pubkey ].balance = state_balance - ( fees_paid * 1000 );
+                    bankify.state.nostr_state.nwc_info[ app_pubkey ].balance = state_balance - fees_paid;
                 }
                 console.log( "preimage:" );
                 console.log( pay_info[ "payment_preimage" ] );
