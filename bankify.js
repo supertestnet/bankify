@@ -305,6 +305,7 @@ var bankify = {
                     var balance_now = bankify.getBalance();
                     var fees_paid = ( balance_before_paying - pre_amount - balance_now ) * 1000;
                     bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ].fees_paid = fees_paid;
+                    bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ].description = bankify.getInvoiceDescription( bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "invoice" ] );
                     var state_balance = bankify.state.nostr_state.nwc_info[ app_pubkey ].balance;
                     bankify.state.nostr_state.nwc_info[ app_pubkey ].balance = state_balance - fees_paid;
                 }
