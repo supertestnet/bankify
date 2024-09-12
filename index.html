@@ -104,8 +104,7 @@
             await waitForConnection();
             $( '.nwc_string_div' ).innerHTML = `<p>Here is your NWC string:</p><p style="border: 1px solid black; background-color: #aaaaaa; color: black; font-family: monospace; padding: 0.5rem; max-width: 15rem; word-wrap: break-word;">${nwc_string}</p><p><button onclick="destroyConnection( '${connection_id}' )">Destroy this connection</button></p>`;
             $( '.send_and_receive_btns' ).classList.remove( "hidden" );
-            var sendLN = async () => bankify.sendLN;
-            $( '.send' ).onclick = sendLN;
+            $( '.send' ).onclick = () => {bankify.sendLN()};
             $( '.receive' ).onclick = async () => {
                 $( '.invoice_box' ).innerText = `loading...`;
                 $( '.invoice_box' ).classList.remove( "hidden" );
