@@ -231,7 +231,13 @@ var bankify = {
         var err_msg = `you cannot send more than you have`;
         if ( isNaN( invoice_or_amount ) ) err_msg = `you cannot send this amount because you need an extra ${amount - bankify.getBalance()} sats to pay for potential LN routing fees. Try sending a bit less`;
         if ( isNaN( amount ) || Number( amount ) < 1 || amount > bankify.getBalance() ) {
-            if ( app_pubkey ) return err_msg;
+            if ( app_pubkey ) {
+                if ( isNaN( invoice_or_amount ) ) {
+                    var pmthash = bankify.getInvoicePmthash( invoice_or_amount );
+                    bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "err_msg" ] = err_msg;
+                }
+                return err_msg;
+            }
             return alert( err_msg );
         }
         var change = bankify.getBalance() - amount;
@@ -468,7 +474,7 @@ var bankify = {
                     if ( !invoice_data ) invoice_data = invoice;
                     var invoice_is_settled = await bankify.checkLNInvoice( mymint, invoice_data, app_pubkey );
                     var preimage_to_return = state.tx_history[ pmthash ][ "preimage" ];
-                    var reply = JSON.stringify({
+                    var reply = {
                         result_type: "lookup_invoice",
                         result: {
                             type: state.tx_history[ pmthash ][ "type" ],
@@ -484,7 +490,15 @@ var bankify = {
                             expires_at: state.tx_history[ pmthash ][ "expires_at" ],
                             settled_at: state.tx_history[ pmthash ][ "settled_at" ],
                         }
-                    });
+                    }
+                    if ( "err_msg" in state.tx_history[ pmthash ] && state.tx_history[ pmthash ][ "err_msg" ] ) {
+                        reply.error = {
+                            code: "OTHER",
+                            message: state.tx_history[ pmthash ][ "err_msg" ],
+                        }
+                        reply.result = {}
+                    }
+                    reply = JSON.stringify( reply );
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
                     return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
                 }
