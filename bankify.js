@@ -471,7 +471,7 @@ var bankify = {
                     var reply = JSON.stringify({
                         result_type: "lookup_invoice",
                         result: {
-                            type: "incoming",
+                            type: state.tx_history[ pmthash ][ "type" ],
                             invoice: invoice,
                             bolt11: invoice,
                             description: state.tx_history[ pmthash ][ "description" ],
