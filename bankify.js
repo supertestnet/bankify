@@ -521,6 +521,7 @@ var bankify = {
                     txs = JSON.parse( JSON.stringify( txs ) );
                     txs.forEach( item => delete item[ "invoice_data" ] );
                     txs.sort( ( a, b ) => b[ "created_at" ] - a[ "created_at" ] );
+                    txs.forEach( tx => {console.log( tx[ "created_at" ]})
                     if ( "from" in command.params ) {
                         var new_txs = [];
                         txs.forEach( item => {
