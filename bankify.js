@@ -395,7 +395,6 @@ var bankify = {
                     return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
                 }
                 if ( command.method === "make_invoice" ) {
-                    console.log( 0 );
                     if ( !String( command.params.amount ).endsWith( "000" ) ) {
                         var reply = JSON.stringify({
                             result_type: command.method,
@@ -408,7 +407,6 @@ var bankify = {
                         var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
                         return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
                     }
-                    console.log( 1 );
                     var invoice_data = await bankify.getLNInvoice( mymint, Math.floor( command.params.amount / 1000 ) );
                     var reply = JSON.stringify({
                         result_type: command.method,
@@ -521,7 +519,6 @@ var bankify = {
                     txs = JSON.parse( JSON.stringify( txs ) );
                     txs.forEach( item => delete item[ "invoice_data" ] );
                     txs.sort( ( a, b ) => b[ "created_at" ] - a[ "created_at" ] );
-                    txs.forEach( tx => {console.log( tx[ "created_at" ]})
                     if ( "from" in command.params ) {
                         var new_txs = [];
                         txs.forEach( item => {
