@@ -23,8 +23,8 @@ var super_nostr = {
     },
     getEvents: async ( relay_or_socket, ids, authors, kinds, until, since, limit, etags, ptags ) => {
         var socket_is_permanent = false;
-        if ( typeof socket !== "string" ) socket_is_permanent = true;
-        if ( typeof socket === "string" ) var socket = new WebSocket( relay_or_socket );
+        if ( typeof relay_or_socket !== "string" ) socket_is_permanent = true;
+        if ( typeof relay_or_socket === "string" ) var socket = new WebSocket( relay_or_socket );
         else var socket = relay_or_socket;
         var events = [];
         var opened = false;
@@ -92,8 +92,8 @@ var super_nostr = {
     },
     sendEvent: ( event, relay_or_socket ) => {
         var socket_is_permanent = false;
-        if ( typeof socket !== "string" ) socket_is_permanent = true;
-        if ( typeof socket === "string" ) var socket = new WebSocket( relay_or_socket );
+        if ( typeof relay_or_socket !== "string" ) socket_is_permanent = true;
+        if ( typeof relay_or_socket === "string" ) var socket = new WebSocket( relay_or_socket );
         else var socket = relay_or_socket;
         if ( !socket_is_permanent ) {
             socket.addEventListener( 'open', async () => {
