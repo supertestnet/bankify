@@ -345,7 +345,7 @@ var bankify = {
         console.log( nut );
         if ( $( '.balance' ) ) $( '.balance' ).innerText = bankify.getBalance();
     },
-    createNWCconnection: async () => {
+    createNWCconnection: async ( permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ] ) => {
         var listen = async socket => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
@@ -355,7 +355,7 @@ var bankify = {
             var subscription = [ "REQ", subId, filter ];
             socket.send( JSON.stringify( subscription ) );
             var state = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ];
-            var msg = `pay_invoice get_balance make_invoice lookup_invoice list_transactions get_info`;
+            var msg = permissions.join( " " );
             var event = await super_nostr.prepEvent( state[ "app_privkey" ], msg, 13194 );
             return super_nostr.sendEvent( event, socket );
         }
@@ -386,6 +386,7 @@ var bankify = {
             var mymint = bankify.state.mymint;
             try {
                 command = JSON.parse( command );
+                console.log( command );
                 if ( !state.permissions.includes( command.method ) ) {
                     var reply = JSON.stringify({
                         result_type: command.method,
@@ -398,7 +399,6 @@ var bankify = {
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
                     return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
                 }
-                console.log( 'continuing' );
                 if ( command.method === "get_info" ) {
                     var blockheight = await bankify.getBlockheight();
                     var blockhash = await bankify.getBlockhash( blockheight );
@@ -411,7 +411,7 @@ var bankify = {
                             network: "mainnet",
                             block_height: blockheight,
                             block_hash: blockhash,
-                            methods: [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ],
+                            methods: state.permissions.join( " " ),
                         },
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
@@ -620,6 +620,7 @@ var bankify = {
                         settled_at: null,
                         paid: false,
                     }
+
                     if ( !invoice_amt ) {
                         var err_msg = `amountless invoices are not yet supported by this backend`;
                         bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "err_msg" ] = err_msg;
@@ -743,7 +744,7 @@ var bankify = {
             var user_pubkey = nobleSecp256k1.getPublicKey( user_secret, true ).substring( 2 );
             var nwc_string = `nostr+walletconnect://${app_pubkey}?relay=${relay}&secret=${user_secret}`;
             bankify.state.nostr_state.nwc_info[ app_pubkey ] = {
-                permissions: [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ],
+                permissions,
                 mymint: bankify.state.mymint,
                 nwc_string,
                 app_privkey,
