@@ -18,13 +18,13 @@ Whether you use bankify.js or bankify_for_nodejs.js, they both have the same, ve
 
 First, add a mint:
 
-```
+```javascript
 bankify.state.mymint = "https://mint.coinos.io";
 ```
 
 Second, craft permissions:
 
-```
+```javascript
 var permissions = [
     "get_info",
     "get_balance",
@@ -39,7 +39,7 @@ var permissions = [
 
 Third, create your connection string:
 
-```
+```javascript
 (async()=>{
     var nwc_string = await bankify.createNWCconnection( permissions );
     console.log( nwc_string );
