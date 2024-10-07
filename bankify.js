@@ -376,7 +376,7 @@ var bankify = {
                 event['tags'],
                 event['content']
             ]);
-            var id_bytes = await nobleSecp256k1.utils.sha256( bankify.hexToBytes( textToHex( serial_event ) ) );
+            var id_bytes = await nobleSecp256k1.utils.sha256( bankify.hexToBytes( bankify.textToHex( serial_event ) ) );
             var id = bankify.bytesToHex( id_bytes );
             var sig = event.sig;
             var pubkey = event.pubkey;
