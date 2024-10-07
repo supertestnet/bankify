@@ -29,7 +29,7 @@ var bankify = {
     },
     hexToBytes: hex => Uint8Array.from( hex.match( /.{1,2}/g ).map( byte => parseInt( byte, 16 ) ) ),
     bytesToHex: bytes => bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" ),
-    textToHex = text => {
+    textToHex: text => {
         var encoded = new TextEncoder().encode( text );
         return Array.from( encoded )
             .map( x => x.toString( 16 ).padStart( 2, "0" ) )
