@@ -411,7 +411,7 @@ var bankify = {
                             network: "mainnet",
                             block_height: blockheight,
                             block_hash: blockhash,
-                            methods: state.permissions.join( " " ),
+                            methods: state.permissions,
                         },
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
