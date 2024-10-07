@@ -755,7 +755,6 @@ var bankify = {
                 balance: 0,
                 tx_history: {},
             }
-            console.log( nwc_string );
         }
         nostrLoop();
         var waitForConnection = async () => {
