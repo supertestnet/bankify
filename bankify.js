@@ -600,32 +600,8 @@ var bankify = {
                     if ( "bolt11" in command.params ) invoice = command.params.bolt11;
                     if ( "invoice" in command.params && !invoice ) invoice = command.params.invoice;
                     if ( invoice ) var pmthash = bankify.getInvoicePmthash( invoice );
+                    else return;
                     var invoice_amt = bolt11.decode( invoice ).satoshis;
-                    if ( !invoice_amt ) {
-                        var reply = JSON.stringify({
-                            result_type: command.method,
-                            error: {
-                                code: "NOT_IMPLEMENTED",
-                                message: `amountless invoices are not yet supported by this backend`,
-                            },
-                            result: {}
-                        });
-                        var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
-                    }
-                    var balance = state.balance;
-                    if ( Math.floor( .99 * balance ) - ( invoice_amt * 1000 ) < 0 ) {
-                        var reply = JSON.stringify({
-                            result_type: command.method,
-                            error: {
-                                code: "INSUFFICIENT_BALANCE",
-                                message: `you must leave 1% in reserve to pay routing fees so the max amount you can pay is ${Math.floor( ( .99 * balance ) / 1000 )} sats and this invoice is for ${invoice_amt} sats`,
-                            },
-                            result: {}
-                        });
-                        var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
-                    }
 
                     //put the tx info in tx_history
 
@@ -644,6 +620,35 @@ var bankify = {
                         settled_at: null,
                         paid: false,
                     }
+                    if ( !invoice_amt ) {
+                        var err_msg = `amountless invoices are not yet supported by this backend`;
+                        bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "err_msg" ] = err_msg;
+                        var reply = JSON.stringify({
+                            result_type: command.method,
+                            error: {
+                                code: "NOT_IMPLEMENTED",
+                                message: `amountless invoices are not yet supported by this backend`,
+                            },
+                            result: {}
+                        });
+                        var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    }
+                    var balance = state.balance;
+                    if ( Math.floor( .99 * balance ) - ( invoice_amt * 1000 ) < 0 ) {
+                        var err_msg = `you must leave 1% in reserve to pay routing fees so the max amount you can pay is ${Math.floor( ( .99 * balance ) / 1000 )} sats and this invoice is for ${invoice_amt} sats`;
+                        bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "err_msg" ] = err_msg;
+                        var reply = JSON.stringify({
+                            result_type: command.method,
+                            error: {
+                                code: "INSUFFICIENT_BALANCE",
+                                message: `you must leave 1% in reserve to pay routing fees so the max amount you can pay is ${Math.floor( ( .99 * balance ) / 1000 )} sats and this invoice is for ${invoice_amt} sats`,
+                            },
+                            result: {}
+                        });
+                        var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    }
 
                     var response_from_mint = await bankify.send( mymint, invoice, null, app_pubkey );
                     //response is one of three things:
@@ -652,6 +657,8 @@ var bankify = {
                     //3. you cannot send this amount because you need an extra ${amount - bankify.getBalance()} sats to pay for potential LN routing fees. Try sending a bit less
 
                     if ( !response_from_mint.startsWith( "payment succeeded" ) ) {
+                        var err_msg = response_from_mint;
+                        bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history[ pmthash ][ "err_msg" ] = err_msg;
                         var reply = JSON.stringify({
                             result_type: command.method,
                             error: {
