@@ -29,6 +29,12 @@ var bankify = {
     },
     hexToBytes: hex => Uint8Array.from( hex.match( /.{1,2}/g ).map( byte => parseInt( byte, 16 ) ) ),
     bytesToHex: bytes => bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" ),
+    textToHex = text => {
+        var encoded = new TextEncoder().encode( text );
+        return Array.from( encoded )
+            .map( x => x.toString( 16 ).padStart( 2, "0" ) )
+            .join( "" );
+    },
     waitASec: num => new Promise( res => setTimeout( res, num * 1000 ) ),
     decomposeAmount: amount_to_decompose => {
         var decomposed = [];
@@ -361,6 +367,21 @@ var bankify = {
             if ( !( app_pubkey in bankify.state.nostr_state.nwc_info ) ) return;
             var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
             if ( event.pubkey !== state[ "user_pubkey" ] ) return;
+            //validate sig
+            var serial_event = JSON.stringify([
+                0,
+                event['pubkey'],
+                event['created_at'],
+                event['kind'],
+                event['tags'],
+                event['content']
+            ]);
+            var id_bytes = await nobleSecp256k1.utils.sha256( bankify.hexToBytes( textToHex( serial_event ) ) );
+            var id = bankify.bytesToHex( id_bytes );
+            var sig = event.sig;
+            var pubkey = event.pubkey;
+            var sig_is_valid = await nobleSecp256k1.schnorr.verify( sig, id, pubkey );
+            if ( !sig_is_valid ) return;
             var command = super_nostr.decrypt( state[ "app_privkey" ], event.pubkey, content );
             var mymint = bankify.state.mymint;
             try {
