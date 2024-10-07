@@ -386,8 +386,7 @@ var bankify = {
             var mymint = bankify.state.mymint;
             try {
                 command = JSON.parse( command );
-                console.log( command );
-                if ( !( command.method in state.permissions ) ) {
+                if ( !state.permissions.includes( command.method ) ) {
                     var reply = JSON.stringify({
                         result_type: command.method,
                         error: {
@@ -399,6 +398,7 @@ var bankify = {
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
                     return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
                 }
+                console.log( 'continuing' );
                 if ( command.method === "get_info" ) {
                     var blockheight = await bankify.getBlockheight();
                     var blockhash = await bankify.getBlockhash( blockheight );
