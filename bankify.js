@@ -387,6 +387,18 @@ var bankify = {
             try {
                 command = JSON.parse( command );
                 console.log( command );
+                if ( !( command.method in state.permissions ) ) {
+                    var reply = JSON.stringify({
+                        result_type: command.method,
+                        error: {
+                            code: "RESTRICTED",
+                            message: "This public key is not allowed to do this operation.",
+                        },
+                        result: {}
+                    });
+                    var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                }
                 if ( command.method === "get_info" ) {
                     var blockheight = await bankify.getBlockheight();
                     var blockhash = await bankify.getBlockhash( blockheight );
@@ -724,6 +736,7 @@ var bankify = {
             var user_pubkey = nobleSecp256k1.getPublicKey( user_secret, true ).substring( 2 );
             var nwc_string = `nostr+walletconnect://${app_pubkey}?relay=${relay}&secret=${user_secret}`;
             bankify.state.nostr_state.nwc_info[ app_pubkey ] = {
+                permissions: [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ],
                 mymint: bankify.state.mymint,
                 nwc_string,
                 app_privkey,
