@@ -346,15 +346,15 @@ var bankify = {
         if ( $( '.balance' ) ) $( '.balance' ).innerText = bankify.getBalance();
     },
     createNWCconnection: async ( permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ] ) => {
-        var listen = async socket => {
+        var listen = async ( socket, app_pubkey ) => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
             filter.kinds = [ 23194 ];
             filter.since = Math.floor( Date.now() / 1000 );
-            filter[ "#p" ] = [ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ];
+            filter[ "#p" ] = [ app_pubkey ];
             var subscription = [ "REQ", subId, filter ];
             socket.send( JSON.stringify( subscription ) );
-            var state = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ];
+            var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
             var msg = permissions.join( " " );
             var event = await super_nostr.prepEvent( state[ "app_privkey" ], msg, 13194 );
             return super_nostr.sendEvent( event, socket );
@@ -702,11 +702,11 @@ var bankify = {
                 if ( event.tags[ i ] && event.tags[ i ][ 0 ] && event.tags[ i ][ 1 ] && event.tags[ i ][ 0 ] == "p" ) return event.tags[ i ][ 1 ];
             }
         }
-        var nostrLoop = async () => {
+        var nostrLoop = async app_pubkey => {
             var relay = "wss://nostrue.com";
             bankify.state.nostr_state.socket = new WebSocket( relay );
             bankify.state.nostr_state.socket.addEventListener( 'message', handleEvent );
-            bankify.state.nostr_state.socket.addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.socket );} );
+            bankify.state.nostr_state.socket.addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.socket, app_pubkey );} );
             var connection_failure = false;
             var innerLoop = async ( tries = 0 ) => {
                 if ( connection_failure ) return alert( `your connection to nostr failed and could not be restarted, please refresh the page` );
@@ -730,11 +730,11 @@ var bankify = {
                 await super_nostr.waitSomeSeconds( 1 );
                 bankify.state.nostr_state.socket = new WebSocket( relay );
                 bankify.state.nostr_state.socket.addEventListener( 'message', handleEvent );
-                bankify.state.nostr_state.socket.addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.socket );} );
+                bankify.state.nostr_state.socket.addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.socket, app_pubkey );} );
                 await innerLoop();
             }
             await innerLoop();
-            await nostrLoop();
+            await nostrLoop( app_pubkey );
         }
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) {
             var relay = "wss://nostrue.com";
@@ -756,7 +756,8 @@ var bankify = {
                 tx_history: {},
             }
         }
-        nostrLoop();
+        if ( !app_pubkey ) var app_pubkey = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ].app_pubkey;
+        nostrLoop( app_pubkey );
         var waitForConnection = async () => {
             if ( bankify.state.nostr_state.socket.readyState === 1 ) return;
             console.log( 'waiting for connection...' );
