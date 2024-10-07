@@ -766,6 +766,7 @@ var bankify = {
         }
         await waitForConnection();
         console.log( `connected!` );
+        if ( nwc_string ) return nwc_string;
     },
     sendLN: async () => {
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
