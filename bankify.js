@@ -350,7 +350,7 @@ var bankify = {
             var filter  = {}
             filter.kinds = [ 23194 ];
             filter.since = Math.floor( Date.now() / 1000 );
-            filter[ "#p" ] = [ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ];
+            filter[ "#p" ] = [ app_pubkey ];
             var subscription = [ "REQ", subId, filter ];
             socket.send( JSON.stringify( subscription ) );
             var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
