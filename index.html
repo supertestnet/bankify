@@ -78,7 +78,7 @@
             if ( mint.startsWith( "fed1" ) ) return alert( `your mint is not a cashu mint, if you look on bitcoinmints.com you'll see you accidentally clicked on that supports MODULES and you need one that supports NUTS. Please try again` );
             if ( !mint.startsWith( "https://" ) ) return alert( `your mint is not a cashu mint url, you must copy the mint's url and nothing else. Please try again` );
             bankify.state.mymint = mint;
-            bankify.createNWCconnection();
+            bankify.createNWCconnection( mint );
         }
         var showStringLoop = async () => {
             if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) {
@@ -90,12 +90,12 @@
             }
             var connection_id = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
             var nwc_string = bankify.state.nostr_state.nwc_info[ connection_id ].nwc_string;
-            bankify.state.mymint = bankify.state.nostr_state.nwc_info[ connection_id ].mymint;
+            var mymint = bankify.state.nostr_state.nwc_info[ connection_id ].mymint;
             $( '.checking_connection' ).classList.add( "hidden" );
             $( '.nwc_btns' ).classList.add( "hidden" );
             $( '.nwc_string_div' ).innerHTML = `<p>Creating nwc connection...</p>`;
             $( '.create_nwc_connection' ).classList.add( "hidden" );
-            if ( !bankify.state.nostr_state.socket ) bankify.createNWCconnection();
+            if ( !bankify.state.nostr_state.socket ) bankify.createNWCconnection( mymint );
             var waitForConnection = async () => {
                 if ( bankify.state.nostr_state.socket.readyState === 1 ) return;
                 await super_nostr.waitSomeSeconds( 1 );
