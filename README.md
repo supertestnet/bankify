@@ -25,7 +25,7 @@ var mint = "https://mint.coinos.io";
 //So don’t use ones that start with fed1, use ones that start with https
 ```
 
-Second, craft permissions:
+Second, craft permissions (optional):
 
 ```javascript
 var permissions = [
@@ -38,22 +38,31 @@ var permissions = [
 ];
 //See full permissions list here: https://docs.nwc.dev/reference-api/overview
 //Note that Bankify only supports the 6 permissions listed above
+//Also note that Bankify *defaults* to the permissions above -- so if you don't create a custom permissions array, you'll get the above
 ```
 
-Third, create your connection string:
+Third, pick a relay (optional):
+
+```javascript
+var relay = "wss://nostrue.com";
+//Find alternative relays at https://relays.xport.top/
+//Note that Bankify *defaults* to the relay above -- so if you don't create a custom relay variable, you'll get the above
+```
+
+Fourth, create your connection string:
 
 ```javascript
 (async()=>{
-    var nwc_string = await bankify.createNWCconnection( mint, permissions );
+    var nwc_string = await bankify.createNWCconnection( mint, permissions, relay );
     console.log( nwc_string );
 })();
 ```
 
-Fourth, you can test the connection string using any nwc_client, such as:
+Fifth, you can test the connection string using any nwc_client, such as:
 
 https://supertestnet.github.io/nwc_tester/
 
-Fifth, once you've verified that your NWC connection works as expected, you can interact with it using the NWC api. I have a library for making interactions with NWC easier:
+Sixth, once you've verified that your NWC connection works as expected, you can interact with it using the NWC api. I have a library for making interactions with NWC easier:
 
 https://github.com/supertestnet/nwcjs
 
