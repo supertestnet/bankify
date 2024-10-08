@@ -755,7 +755,7 @@ var bankify = {
             }
         }
         if ( !app_pubkey ) var app_pubkey = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ].app_pubkey;
-        nostrLoop( app_pubkey, relay );
+        nostrLoop( app_pubkey, myrelay );
         var waitForConnection = async () => {
             if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 1 ) return;
             console.log( 'waiting for connection...' );
