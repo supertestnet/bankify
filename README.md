@@ -20,7 +20,7 @@ First, select a mint:
 
 ```javascript
 var mint = "https://mint.coinos.io";
-//Find more mints at bitcoinmints.com
+//Find alternative mints at bitcoinmints.com
 //Note that currently bankify supports cashu mints but not fedimints
 //So don’t use ones that start with fed1, use ones that start with https
 ```
