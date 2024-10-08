@@ -7,8 +7,9 @@
 var bankify = {
     state: {
         utxos: [],
+        mymint: null,
         nostr_state: {
-            socket: null,
+            sockets: {},
             nwc_info: {}
         },
     },
@@ -344,16 +345,16 @@ var bankify = {
         console.log( nut );
         if ( $( '.balance' ) ) $( '.balance' ).innerText = bankify.getBalance();
     },
-    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ] ) => {
-        var listen = async ( socket, app_pubkey ) => {
+    createNWCconnection: async ( permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com" ) => {
+        var listen = async socket => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
             filter.kinds = [ 23194 ];
             filter.since = Math.floor( Date.now() / 1000 );
-            filter[ "#p" ] = [ app_pubkey ];
+            filter[ "#p" ] = [ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ];
             var subscription = [ "REQ", subId, filter ];
             socket.send( JSON.stringify( subscription ) );
-            var state = bankify.state.nostr_state.nwc_info[ app_pubkey ];
+            var state = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ];
             var msg = permissions.join( " " );
             var event = await super_nostr.prepEvent( state[ "app_privkey" ], msg, 13194 );
             return super_nostr.sendEvent( event, socket );
@@ -382,7 +383,7 @@ var bankify = {
             var sig_is_valid = await nobleSecp256k1.schnorr.verify( sig, id, pubkey );
             if ( !sig_is_valid ) return;
             var command = super_nostr.decrypt( state[ "app_privkey" ], event.pubkey, content );
-            var mymint = state.mymint;
+            var mymint = bankify.state.mymint;
             try {
                 command = JSON.parse( command );
                 console.log( command );
@@ -396,7 +397,7 @@ var bankify = {
                         result: {}
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
                 if ( command.method === "get_info" ) {
                     var blockheight = await bankify.getBlockheight();
@@ -414,7 +415,7 @@ var bankify = {
                         },
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
                 if ( command.method === "get_balance" ) {
                     var reply = JSON.stringify({
@@ -424,7 +425,7 @@ var bankify = {
                         },
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
                 if ( command.method === "make_invoice" ) {
                     if ( !String( command.params.amount ).endsWith( "000" ) ) {
@@ -437,7 +438,7 @@ var bankify = {
                             result: {}
                         });
                         var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                     }
                     var invoice_data = await bankify.getLNInvoice( mymint, Math.floor( command.params.amount / 1000 ) );
                     var reply = JSON.stringify({
@@ -477,7 +478,7 @@ var bankify = {
                     }
                     bankify.checkInvoiceTilPaidOrError( mymint, invoice_data, app_pubkey );
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
                 if ( command.method === "lookup_invoice" ) {
                     var invoice = null;
@@ -497,7 +498,7 @@ var bankify = {
                             result: {}
                         });
                         var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                     }
                     if ( !invoice ) invoice = state.tx_history[ pmthash ].invoice;
                     var invoice_data = state.tx_history[ pmthash ][ "invoice_data" ];
@@ -530,7 +531,7 @@ var bankify = {
                     }
                     reply = JSON.stringify( reply );
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
                 if ( command.method === "list_transactions" ) {
                     var txids = Object.keys( bankify.state.nostr_state.nwc_info[ app_pubkey ].tx_history );
@@ -592,7 +593,7 @@ var bankify = {
                         },
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
                 if ( command.method === "pay_invoice" ) {
                     var invoice = null;
@@ -632,7 +633,7 @@ var bankify = {
                             result: {}
                         });
                         var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                     }
                     var balance = state.balance;
                     if ( Math.floor( .99 * balance ) - ( invoice_amt * 1000 ) < 0 ) {
@@ -647,7 +648,7 @@ var bankify = {
                             result: {}
                         });
                         var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                     }
 
                     var response_from_mint = await bankify.send( mymint, invoice, null, app_pubkey );
@@ -668,7 +669,7 @@ var bankify = {
                             result: {}
                         });
                         var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                        return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                        return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                     }
 
                     var preimage_to_return = state.tx_history[ pmthash ][ "preimage" ];
@@ -679,7 +680,7 @@ var bankify = {
                         },
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 }
             } catch ( e ) {
                 try {
@@ -692,7 +693,7 @@ var bankify = {
                         result: {}
                     });
                     var event = await super_nostr.prepEvent( state[ "app_privkey" ], super_nostr.encrypt( state[ "app_privkey" ], event.pubkey, reply ), 23195, [ [ "p", event.pubkey ], [ "e", event.id ] ] );
-                    return super_nostr.sendEvent( event, bankify.state.nostr_state.socket );
+                    return super_nostr.sendEvent( event, bankify.state.nostr_state.sockets[ app_pubkey ] );
                 } catch( e2 ) {}
             }
         }
@@ -701,42 +702,42 @@ var bankify = {
                 if ( event.tags[ i ] && event.tags[ i ][ 0 ] && event.tags[ i ][ 1 ] && event.tags[ i ][ 0 ] == "p" ) return event.tags[ i ][ 1 ];
             }
         }
-        var nostrLoop = async app_pubkey => {
-            var relay = "wss://nostrue.com";
-            bankify.state.nostr_state.socket = new WebSocket( relay );
-            bankify.state.nostr_state.socket.addEventListener( 'message', handleEvent );
-            bankify.state.nostr_state.socket.addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.socket, app_pubkey );} );
+        var nostrLoop = async () => {
+            var relay = myrelay;
+            bankify.state.nostr_state.sockets[ app_pubkey ] = new WebSocket( relay );
+            bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'message', handleEvent );
+            bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.sockets[ app_pubkey ] );} );
             var connection_failure = false;
             var innerLoop = async ( tries = 0 ) => {
                 if ( connection_failure ) return alert( `your connection to nostr failed and could not be restarted, please refresh the page` );
-                if ( bankify.state.nostr_state.socket.readyState === 1 ) {
+                if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 1 ) {
                     await super_nostr.waitSomeSeconds( 1 );
                     return innerLoop();
                 }
                 // if there is no connection, check if we are still connecting
                 // give it two chances to connect if so
-                if ( bankify.state.nostr_state.socket.readyState === 0 && !tries ) {
+                if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 0 && !tries ) {
                     await super_nostr.waitSomeSeconds( 1 );
                     return innerLoop( 1 );
                 }
-                if ( bankify.state.nostr_state.socket.readyState === 0 && tries ) {
+                if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 0 && tries ) {
                     connection_failure = true;
                     return;
                 }
                 // otherwise, it is either closing or closed
                 // ensure it is closed, then make a new connection
-                bankify.state.nostr_state.socket.close();
+                bankify.state.nostr_state.sockets[ app_pubkey ].close();
                 await super_nostr.waitSomeSeconds( 1 );
-                bankify.state.nostr_state.socket = new WebSocket( relay );
-                bankify.state.nostr_state.socket.addEventListener( 'message', handleEvent );
-                bankify.state.nostr_state.socket.addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.socket, app_pubkey );} );
+                bankify.state.nostr_state.sockets[ app_pubkey ] = new WebSocket( relay );
+                bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'message', handleEvent );
+                bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.sockets[ app_pubkey ] );} );
                 await innerLoop();
             }
             await innerLoop();
-            await nostrLoop( app_pubkey );
+            await nostrLoop();
         }
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) {
-            var relay = "wss://nostrue.com";
+            var relay = myrelay;
             var app_privkey = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
             var app_pubkey = nobleSecp256k1.getPublicKey( app_privkey, true ).substring( 2 );
             var user_secret = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
@@ -744,7 +745,7 @@ var bankify = {
             var nwc_string = `nostr+walletconnect://${app_pubkey}?relay=${relay}&secret=${user_secret}`;
             bankify.state.nostr_state.nwc_info[ app_pubkey ] = {
                 permissions,
-                mymint,
+                mymint: bankify.state.mymint,
                 nwc_string,
                 app_privkey,
                 app_pubkey,
@@ -755,10 +756,9 @@ var bankify = {
                 tx_history: {},
             }
         }
-        if ( !app_pubkey ) var app_pubkey = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ].app_pubkey;
-        nostrLoop( app_pubkey );
+        nostrLoop();
         var waitForConnection = async () => {
-            if ( bankify.state.nostr_state.socket.readyState === 1 ) return;
+            if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 1 ) return;
             console.log( 'waiting for connection...' );
             await super_nostr.waitSomeSeconds( 1 );
             return waitForConnection();
@@ -769,8 +769,8 @@ var bankify = {
     },
     sendLN: async () => {
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
+        var mymint = bankify.state.mymint;
         var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
-        var mymint = bankify.state.nostr_state.nwc_info[ app_pubkey ].mymint;
         var invoice = prompt( `enter a lightning invoice` );
         var invoice_amt = bolt11.decode( invoice ).satoshis;
         if ( !invoice_amt ) return alert( `amountless invoices are not yet supported by this wallet` );
@@ -796,8 +796,8 @@ var bankify = {
     },
     receiveLN: async () => {
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
+        var mymint = bankify.state.mymint;
         var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
-        var mymint = bankify.state.nostr_state.nwc_info[ app_pubkey ].mymint;
         var amount = prompt( `enter how much you want in satoshis` );
         if ( !amount || isNaN( amount ) ) return;
         amount = Number( amount );
