@@ -7,7 +7,6 @@
 var bankify = {
     state: {
         utxos: [],
-        mymint: null,
         nostr_state: {
             sockets: {},
             nwc_info: {}
@@ -345,7 +344,7 @@ var bankify = {
         console.log( nut );
         if ( $( '.balance' ) ) $( '.balance' ).innerText = bankify.getBalance();
     },
-    createNWCconnection: async ( permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com" ) => {
+    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com" ) => {
         var listen = async socket => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
@@ -383,7 +382,7 @@ var bankify = {
             var sig_is_valid = await nobleSecp256k1.schnorr.verify( sig, id, pubkey );
             if ( !sig_is_valid ) return;
             var command = super_nostr.decrypt( state[ "app_privkey" ], event.pubkey, content );
-            var mymint = bankify.state.mymint;
+            var mymint = state.mymint;
             try {
                 command = JSON.parse( command );
                 console.log( command );
@@ -745,7 +744,7 @@ var bankify = {
             var nwc_string = `nostr+walletconnect://${app_pubkey}?relay=${relay}&secret=${user_secret}`;
             bankify.state.nostr_state.nwc_info[ app_pubkey ] = {
                 permissions,
-                mymint: bankify.state.mymint,
+                mymint,
                 nwc_string,
                 app_privkey,
                 app_pubkey,
@@ -769,8 +768,8 @@ var bankify = {
     },
     sendLN: async () => {
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
-        var mymint = bankify.state.mymint;
         var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
+        var mymint = bankify.state.nostr_state.nwc_info[ app_pubkey ].mymint;
         var invoice = prompt( `enter a lightning invoice` );
         var invoice_amt = bolt11.decode( invoice ).satoshis;
         if ( !invoice_amt ) return alert( `amountless invoices are not yet supported by this wallet` );
@@ -796,8 +795,8 @@ var bankify = {
     },
     receiveLN: async () => {
         if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) return alert( `please create an NWC connection first` );
-        var mymint = bankify.state.mymint;
         var app_pubkey = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
+        var mymint = bankify.state.nostr_state.nwc_info[ app_pubkey ].mymint;
         var amount = prompt( `enter how much you want in satoshis` );
         if ( !amount || isNaN( amount ) ) return;
         amount = Number( amount );
