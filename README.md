@@ -16,10 +16,13 @@ If you look at the file [bankify_for_nodejs.js](https://github.com/supertestnet/
 # Bankify API
 Whether you use bankify.js or bankify_for_nodejs.js, they both have the same, very simple api.
 
-First, add a mint:
+First, select a mint:
 
 ```javascript
-bankify.state.mymint = "https://mint.coinos.io";
+var mint = "https://mint.coinos.io";
+//Find more mints at bitcoinmints.com
+//Note that currently bankify supports cashu mints but not fedimints
+//So don’t use ones that start with fed1, use ones that start with https
 ```
 
 Second, craft permissions:
@@ -41,7 +44,7 @@ Third, create your connection string:
 
 ```javascript
 (async()=>{
-    var nwc_string = await bankify.createNWCconnection( permissions );
+    var nwc_string = await bankify.createNWCconnection( mint, permissions );
     console.log( nwc_string );
 })();
 ```
