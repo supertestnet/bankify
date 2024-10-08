@@ -95,9 +95,9 @@
             $( '.nwc_btns' ).classList.add( "hidden" );
             $( '.nwc_string_div' ).innerHTML = `<p>Creating nwc connection...</p>`;
             $( '.create_nwc_connection' ).classList.add( "hidden" );
-            if ( !bankify.state.nostr_state.socket ) bankify.createNWCconnection( mymint );
+            if ( !Object.keys( bankify.state.nostr_state.sockets ).length ) bankify.createNWCconnection( mymint );
             var waitForConnection = async () => {
-                if ( bankify.state.nostr_state.socket.readyState === 1 ) return;
+                if ( bankify.state.nostr_state.sockets[ connection_id ].readyState === 1 ) return;
                 await super_nostr.waitSomeSeconds( 1 );
                 return waitForConnection();
             }
