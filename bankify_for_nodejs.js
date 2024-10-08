@@ -156,7 +156,6 @@ var super_nostr = {
 var bankify = {
     state: {
         utxos: [],
-        mymint: null,
         nostr_state: {
             socket: null,
             nwc_info: {}
@@ -482,7 +481,7 @@ var bankify = {
         nut = "cashuA" + btoa( JSON.stringify( {token: [nut]} ) );
         console.log( nut );
     },
-    createNWCconnection: async ( permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ] ) => {
+    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ] ) => {
         var listen = async ( socket, app_pubkey ) => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
@@ -520,7 +519,7 @@ var bankify = {
             var sig_is_valid = await nobleSecp256k1.schnorr.verify( sig, id, pubkey );
             if ( !sig_is_valid ) return;
             var command = super_nostr.decrypt( state[ "app_privkey" ], event.pubkey, content );
-            var mymint = bankify.state.mymint;
+            var mymint = state.mymint;
             try {
                 command = JSON.parse( command );
                 console.log( command );
@@ -882,7 +881,7 @@ var bankify = {
             var nwc_string = `nostr+walletconnect://${app_pubkey}?relay=${relay}&secret=${user_secret}`;
             bankify.state.nostr_state.nwc_info[ app_pubkey ] = {
                 permissions,
-                mymint: bankify.state.mymint,
+                mymint,
                 nwc_string,
                 app_privkey,
                 app_pubkey,
