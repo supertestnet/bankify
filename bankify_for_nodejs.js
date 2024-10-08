@@ -838,8 +838,7 @@ var bankify = {
                 if ( event.tags[ i ] && event.tags[ i ][ 0 ] && event.tags[ i ][ 1 ] && event.tags[ i ][ 0 ] == "p" ) return event.tags[ i ][ 1 ];
             }
         }
-        var nostrLoop = async app_pubkey => {
-            var relay = myrelay;
+        var nostrLoop = async ( app_pubkey, relay ) => {
             bankify.state.nostr_state.sockets[ app_pubkey ] = new WebSocket( relay );
             bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'message', handleEvent );
             bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.sockets[ app_pubkey ], app_pubkey );} );
@@ -893,7 +892,7 @@ var bankify = {
             }
         }
         if ( !app_pubkey ) var app_pubkey = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ].app_pubkey;
-        nostrLoop( app_pubkey );
+        nostrLoop( app_pubkey, myrelay );
         var waitForConnection = async () => {
             if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 1 ) return;
             console.log( 'waiting for connection...' );
