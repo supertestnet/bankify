@@ -344,7 +344,7 @@ var bankify = {
         console.log( nut );
         if ( $( '.balance' ) ) $( '.balance' ).innerText = bankify.getBalance();
     },
-    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com" ) => {
+    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com", app_pubkey ) => {
         var listen = async ( socket, app_pubkey ) => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
@@ -732,9 +732,9 @@ var bankify = {
                 await innerLoop();
             }
             await innerLoop();
-            await nostrLoop( app_pubkey );
+            await nostrLoop( app_pubkey, relay );
         }
-        if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) {
+        if ( !app_pubkey ) {
             var relay = myrelay;
             var app_privkey = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
             var app_pubkey = nobleSecp256k1.getPublicKey( app_privkey, true ).substring( 2 );
@@ -754,7 +754,6 @@ var bankify = {
                 tx_history: {},
             }
         }
-        if ( !app_pubkey ) var app_pubkey = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ].app_pubkey;
         nostrLoop( app_pubkey, myrelay );
         var waitForConnection = async () => {
             if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 1 ) return;
