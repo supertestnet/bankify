@@ -77,7 +77,6 @@
             if ( mint.includes( "..." ) ) return alert( `your mint url is invalid, be sure you clicked the clipboard icon on bitcoinmints.com -- if you just highlight + copy it won't work` );
             if ( mint.startsWith( "fed1" ) ) return alert( `your mint is not a cashu mint, if you look on bitcoinmints.com you'll see you accidentally clicked on that supports MODULES and you need one that supports NUTS. Please try again` );
             if ( !mint.startsWith( "https://" ) ) return alert( `your mint is not a cashu mint url, you must copy the mint's url and nothing else. Please try again` );
-            bankify.state.mymint = mint;
             bankify.createNWCconnection( mint );
         }
         var showStringLoop = async () => {
@@ -91,11 +90,13 @@
             var connection_id = Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ];
             var nwc_string = bankify.state.nostr_state.nwc_info[ connection_id ].nwc_string;
             var mymint = bankify.state.nostr_state.nwc_info[ connection_id ].mymint;
+            var permissions = bankify.state.nostr_state.nwc_info[ connection_id ].permissions;
+            var relay = bankify.state.nostr_state.nwc_info[ connection_id ].relay;
             $( '.checking_connection' ).classList.add( "hidden" );
             $( '.nwc_btns' ).classList.add( "hidden" );
             $( '.nwc_string_div' ).innerHTML = `<p>Creating nwc connection...</p>`;
             $( '.create_nwc_connection' ).classList.add( "hidden" );
-            if ( !Object.keys( bankify.state.nostr_state.sockets ).length ) bankify.createNWCconnection( mymint );
+            if ( !( connection_id in bankify.state.nostr_state.sockets ) ) bankify.createNWCconnection( mymint, permissions, relay, connection_id );
             var waitForConnection = async () => {
                 if ( bankify.state.nostr_state.sockets[ connection_id ].readyState === 1 ) return;
                 await super_nostr.waitSomeSeconds( 1 );
@@ -116,6 +117,7 @@
         showStringLoop();
         var destroyConnection = connection_id => {
             delete bankify.state.nostr_state.nwc_info[ connection_id ];
+            delete bankify.state.nostr_state.sockets[ connection_id ];
             localStorage[ "nwc_server_state" ] = JSON.stringify( bankify.state.nostr_state.nwc_info );
             window.location.reload();
         }
