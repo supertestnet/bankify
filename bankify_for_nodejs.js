@@ -481,7 +481,7 @@ var bankify = {
         nut = "cashuA" + btoa( JSON.stringify( {token: [nut]} ) );
         console.log( nut );
     },
-    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com" ) => {
+    createNWCconnection: async ( mymint, permissions = [ "pay_invoice", "get_balance", "make_invoice", "lookup_invoice", "list_transactions", "get_info" ], myrelay = "wss://nostrue.com", app_pubkey ) => {
         var listen = async ( socket, app_pubkey ) => {
             var subId = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
             var filter  = {}
@@ -838,7 +838,8 @@ var bankify = {
                 if ( event.tags[ i ] && event.tags[ i ][ 0 ] && event.tags[ i ][ 1 ] && event.tags[ i ][ 0 ] == "p" ) return event.tags[ i ][ 1 ];
             }
         }
-        var nostrLoop = async ( app_pubkey, relay ) => {
+        var nostrLoop = async app_pubkey => {
+            var relay = myrelay;
             bankify.state.nostr_state.sockets[ app_pubkey ] = new WebSocket( relay );
             bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'message', handleEvent );
             bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.sockets[ app_pubkey ], app_pubkey );} );
@@ -871,7 +872,7 @@ var bankify = {
             await innerLoop();
             await nostrLoop( app_pubkey );
         }
-        if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) {
+        if ( !app_pubkey ) {
             var relay = myrelay;
             var app_privkey = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
             var app_pubkey = nobleSecp256k1.getPublicKey( app_privkey, true ).substring( 2 );
@@ -891,8 +892,7 @@ var bankify = {
                 tx_history: {},
             }
         }
-        if ( !app_pubkey ) var app_pubkey = bankify.state.nostr_state.nwc_info[ Object.keys( bankify.state.nostr_state.nwc_info )[ 0 ] ].app_pubkey;
-        nostrLoop( app_pubkey, myrelay );
+        nostrLoop( app_pubkey );
         var waitForConnection = async () => {
             if ( bankify.state.nostr_state.sockets[ app_pubkey ].readyState === 1 ) return;
             console.log( 'waiting for connection...' );
