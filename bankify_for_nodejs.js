@@ -641,7 +641,7 @@ var bankify = {
                     if ( !invoice_data ) invoice_data = invoice;
                     var invoice_is_settled = await bankify.checkLNInvoice( mymint, invoice_data, app_pubkey );
                     var preimage_to_return = state.tx_history[ pmthash ][ "preimage" ];
-                    if ( !preimage_to_return ) preimage_to_return = "0".repeat( 64 );
+                    if ( state.tx_history[ pmthash ][ "settled_at" ] && !preimage_to_return ) preimage_to_return = "0".repeat( 64 );
                     var reply = {
                         result_type: "lookup_invoice",
                         result: {
