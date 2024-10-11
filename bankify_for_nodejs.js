@@ -152,6 +152,58 @@ var super_nostr = {
         dmsg = decryptedMessage + decipher.final( "utf8" );
         return dmsg;
     },
+    newPermanentConnection: ( relay, listenFunction, handleFunction ) => {
+        var socket_id = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
+        super_nostr.sockets[ socket_id ] = {socket: null, connection_failure: false}
+        super_nostr.connectionLoop( 0, relay, socket_id, listenFunction, handleFunction );
+        return socket_id;
+    },
+    connectionLoop: async ( tries = 0, relay, socket_id, listenFunction, handleFunction ) => {
+        var socketRetrieverFunction = socket_id => {
+            return super_nostr.sockets[ socket_id ][ "socket" ];
+        }
+        var socketReplacerFunction = ( socket_id, socket ) => {
+            super_nostr.sockets[ socket_id ][ "socket" ] = socket;
+            super_nostr.sockets[ socket_id ][ "connection_failure" ] = false;
+        }
+        var socketFailureCheckerFunction = socket_id => {
+            return super_nostr.sockets[ socket_id ][ "connection_failure" ];
+        }
+        var socketFailureSetterFunction = socket_id => {
+            return super_nostr.sockets[ socket_id ][ "connection_failure" ] = true;
+        }
+        if ( socketFailureCheckerFunction( socket_id ) ) return alert( `your connection to nostr failed and could not be restarted, please refresh the page` );
+        var socket = socketRetrieverFunction( socket_id );
+        if ( !socket ) {
+            var socket = new WebSocket( relay );
+            socket.addEventListener( 'message', handleEvent );
+            socket.addEventListener( 'open', ()=>{listen( socket );} );
+            socketReplacerFunction( socket_id, socket );
+        }
+        if ( socket.readyState === 1 ) {
+            await super_nostr.waitSomeSeconds( 1 );
+            return super_nostr.connectionLoop( 0, relay, socket_id, listenFunction, handleFunction );
+        }
+        // if there is no connection, check if we are still connecting
+        // give it two chances to connect if so
+        if ( socket.readyState === 0 && !tries ) {
+            await super_nostr.waitSomeSeconds( 1 );
+            return super_nostr.connectionLoop( 1, relay, socket_id, listenFunction, handleFunction );
+        }
+        if ( socket.readyState === 0 && tries ) {
+            socketFailureSetterFunction( socket_id );
+            return;
+        }
+        // otherwise, it is either closing or closed
+        // ensure it is closed, then make a new connection
+        socket.close();
+        await super_nostr.waitSomeSeconds( 1 );
+        socket = new WebSocket( relay );
+        socket.addEventListener( 'message', handleFunction );
+        socket.addEventListener( 'open', ()=>{listenFunction( socket );} );
+        socketReplacerFunction( socket_id, socket );
+        await super_nostr.connectionLoop( 0, relay, socket_id, listenFunction, handleFunction );
+    }
 }
 var bankify = {
     state: {
