@@ -144,7 +144,7 @@ var super_nostr = {
     newPermanentConnection: ( relay, listenFunction, handleFunction ) => {
         var socket_id = super_nostr.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() ).substring( 0, 16 );
         super_nostr.sockets[ socket_id ] = {socket: null, connection_failure: false}
-        connectionLoop( 0, relay, socket_id, listenFunction, handleFunction );
+        super_nostr.connectionLoop( 0, relay, socket_id, listenFunction, handleFunction );
         return socket_id;
     },
     connectionLoop: async ( tries = 0, relay, socket_id, listenFunction, handleFunction ) => {
