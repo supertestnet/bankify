@@ -14,6 +14,7 @@ var blindSigJS = {
 var WebSocket = require( 'ws' ).WebSocket;
 var browserifyCipher = require( 'browserify-cipher' );
 var super_nostr = {
+    sockets: {},
     hexToBytes: hex => Uint8Array.from( hex.match( /.{1,2}/g ).map( byte => parseInt( byte, 16 ) ) ),
     bytesToHex: bytes => bytes.reduce( ( str, byte ) => str + byte.toString( 16 ).padStart( 2, "0" ), "" ),
     base64ToHex: str => {
