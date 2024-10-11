@@ -173,7 +173,7 @@ var super_nostr = {
         var socketFailureSetterFunction = socket_id => {
             return super_nostr.sockets[ socket_id ][ "connection_failure" ] = true;
         }
-        if ( socketFailureCheckerFunction( socket_id ) ) return alert( `your connection to nostr failed and could not be restarted, please refresh the page` );
+        if ( socketFailureCheckerFunction( socket_id ) ) return console.log( `your connection to nostr failed and could not be restarted, please refresh the page` );
         var socket = socketRetrieverFunction( socket_id );
         if ( !socket ) {
             var socket = new WebSocket( relay );
