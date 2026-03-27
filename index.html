@@ -77,7 +77,8 @@
             if ( mint.includes( "..." ) ) return alert( `your mint url is invalid, be sure you clicked the clipboard icon on bitcoinmints.com -- if you just highlight + copy it won't work` );
             if ( mint.startsWith( "fed1" ) ) return alert( `your mint is not a cashu mint, if you look on bitcoinmints.com you'll see you accidentally clicked on that supports MODULES and you need one that supports NUTS. Please try again` );
             if ( !mint.startsWith( "https://" ) ) return alert( `your mint is not a cashu mint url, you must copy the mint's url and nothing else. Please try again` );
-            bankify.createNWCconnection( mint );
+            var relay = 'wss://nostr.mom';
+            bankify.createNWCconnection( mint, null, relay );
         }
         var showStringLoop = async () => {
             if ( !Object.keys( bankify.state.nostr_state.nwc_info ).length ) {
