@@ -282,7 +282,7 @@ var super_nostr = {
         if ( !socket ) {
             var socket = new WebSocket( relay );
             socket.addEventListener( 'message', handleFunction );
-            socket.addEventListener( 'open', ()=>{listen( socket );} );
+            socket.addEventListener( 'open', ()=>{listenFunction( socket );} );
             socketReplacerFunction( socket_id, socket );
         }
         if ( socket.readyState === 1 ) {
@@ -1000,7 +1000,7 @@ var bankify = {
             var relay = myrelay;
             bankify.state.nostr_state.sockets[ app_pubkey ] = new WebSocket( relay );
             bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'message', handleEvent );
-            bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.sockets[ app_pubkey ], app_pubkey );} );
+            bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listenFunction( bankify.state.nostr_state.sockets[ app_pubkey ], app_pubkey );} );
             var connection_failure = false;
             var innerLoop = async ( tries = 0 ) => {
                 if ( connection_failure ) return console.log( `your connection to nostr failed and could not be restarted, please refresh the page` );
@@ -1024,7 +1024,7 @@ var bankify = {
                 await super_nostr.waitSomeSeconds( 1 );
                 bankify.state.nostr_state.sockets[ app_pubkey ] = new WebSocket( relay );
                 bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'message', handleEvent );
-                bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listen( bankify.state.nostr_state.sockets[ app_pubkey ], app_pubkey );} );
+                bankify.state.nostr_state.sockets[ app_pubkey ].addEventListener( 'open', ()=>{listenFunction( bankify.state.nostr_state.sockets[ app_pubkey ], app_pubkey );} );
                 await innerLoop();
             }
             await innerLoop();
